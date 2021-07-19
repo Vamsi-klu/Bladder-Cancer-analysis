@@ -1,0 +1,102 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+#install.packages("xgboost")
+library(xgboost)
+library(readr)
+library(stringr)
+library(caret)
+library(car)
+```
+
+```{r}
+#Read the dataset
+data=read.csv('./original_gsedata.csv',header = TRUE)
+scaled_df=data.frame(scale(data[1:5724]))
+scaled_df.pca=prcomp(scaled_df[1:5724])
+y=data$class
+df_pca = data.frame(scaled_df.pca$x)[1:24]
+df_pca$class = y
+intrain = createDataPartition(y = df_pca$class, p= 0.8, list = FALSE)
+training = df_pca[intrain,]
+testing = df_pca[-intrain,]
+require('dplyr')
+rows_to_delete_from_train = which(training$class=='Ta')[1:6]
+training = training[-c(rows_to_delete_from_train),]
+rows_to_add = training[c(rows_to_delete_from_train),]
+testing = rbind(testing,rows_to_add)
+training %>% group_by(class) %>% summarise(B = length(class))
+testing %>% group_by(class) %>% summarise(B = length(class))
+```
+```{r}
+y = data.matrix(data.frame(unclass(training$class)))
+y = y-1
+y
+```
+
+
+```{r}
+# Step 1: Run a Cross-Validation to identify the round with the minimum loss or error.
+#         Note: xgboost expects the data in the form of a numeric matrix.
+
+set.seed(100)
+
+param       = list("objective" = "multi:softmax", # multi class classification
+	      "num_class"= 3 ,  		# Number of classes in the dependent variable.
+              "eval_metric" = "merror",  	 # evaluation metric 
+              "nthread" = 8,   			 # number of threads to be used 
+              "max_depth" = 16,    		 # maximum depth of tree 
+              "eta" = 0.1,    			 # step size shrinkage 
+              "gamma" = 0.001,    			 # minimum loss reduction 
+              "subsample" = 0.7,    		 # part of data instances to grow tree 
+              "colsample_bytree" = 1, 		 # subsample ratio of columns when constructing each tree 
+              "min_child_weight" = 12  		 # minimum sum of instance weight needed in a child
+              )
+
+bst = xgboost(
+		param=param,
+		data =as.matrix(training[,-25]),
+		label = y,
+		nrounds=25)
+```
+
+
+```{r}
+
+
+# predict values in test set
+y_pred <- predict(bst, data.matrix(testing[,-25]))
+y_pred = ifelse(y_pred==0,"Ta",ifelse(y_pred==1,"T2+","T1"))
+
+```
+
+
+```{r}
+caret::confusionMatrix(as.factor(y_pred), as.factor(testing$class))
+```
+
+```{r}
+data(iris)
+set.seed(100)
+ind = sample(nrow(iris),nrow(iris)* 0.7)
+training = iris[ind,]
+testing = iris[-ind,]
+#Identify the Predictors and the dependent variable, aka label.
+predictors = colnames(training[-ncol(training)])
+#xgboost works only if the labels are numeric. Hence, convert the labels (Species) to numeric.
+label = as.numeric(training[,ncol(training)])
+print(table (label))
+
+#Alas, xgboost works only if the numeric labels start from 0. Hence, subtract 1 from the label.
+label = as.numeric(training[,ncol(training)])-1
+print(table (label))
+```
+
+
+
+
+

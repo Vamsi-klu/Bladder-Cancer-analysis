@@ -1,0 +1,84 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+#Read the dataset
+data=read.csv('./original_gsedata.csv',header = TRUE)
+scaled_df=data.frame(scale(data[1:5724]))
+scaled_df.pca=prcomp(scaled_df[1:5724])
+y=data$class
+df_pca = data.frame(scaled_df.pca$x)[1:24]
+df_pca$class = y
+intrain = createDataPartition(y = df_pca$class, p= 0.8, list = FALSE)
+training = df_pca[intrain,]
+testing = df_pca[-intrain,]
+require('dplyr')
+rows_to_delete_from_train = which(training$class=='Ta')[1:6]
+training = training[-c(rows_to_delete_from_train),]
+rows_to_add = training[c(rows_to_delete_from_train),]
+testing = rbind(testing,rows_to_add)
+training %>% group_by(class) %>% summarise(B = length(class))
+testing %>% group_by(class) %>% summarise(B = length(class))
+```
+
+
+```{r}
+install.packages("neuralnet")
+library(neuralnet)
+
+training_x = data.frame(scale(training[-25]))
+testing_x = data.frame(scale(testing[-25]))
+set.seed(10)
+nn <- neuralnet(training$class  ~ ., training_x, linear.output = FALSE,threshold = 0.017,act.fct = "tanh",err.fct="sse", hidden=100)
+pred <- compute(nn, testing_x)
+pred <- pred$net.result
+pred = max.col(pred)
+y_pred = ifelse(pred==1,"Ta",ifelse(pred==2,"T2+","T1"))
+F1_Score(as.factor(testing$class),y_pred, positive = NULL)
+plot(nn)
+```
+
+```{r}
+testing$class
+```
+
+
+```{r}
+caret::confusionMatrix(as.factor(y_pred), as.factor(testing$class))
+```
+
+
+```{r}
+require("MLmetrics")
+F1_Score(as.factor(testing$class),y_pred, positive = NULL)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

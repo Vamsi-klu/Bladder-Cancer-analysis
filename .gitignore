@@ -1,0 +1,4 @@
+*.RData
+*.nb
+*.Rhistory
+*.html

@@ -1,0 +1,36 @@
+---
+title: "Bladder Cancer - EDA Plots"
+output: html_notebook
+---
+
+
+```{r}
+#Read the dataset
+data=read.csv('./original_gsedata.csv',header = TRUE)
+head(data)
+```
+
+```{r}
+hist(data$A28102_at,col="darkmagenta",main="Frequency Distribution of Gene A28102_at")
+```
+
+
+```{r}
+require(dplyr) 
+by_class = data %>% group_by(data$class) %>% summarise(B = mean(A28102_at))
+barplot(by_class$B,xlab="Cancer Type",names.arg=by_class$`data$class`,ylab="Average of A28102_at",main="Gene A28102_at Vs. Cancer Type",col="Cyan")
+```
+
+
+```{r}
+#Column wise representation of data in the box plot
+col_names=colnames(data)
+for (i in 2:10) {
+  print(i)
+ boxplot(data[,i],main="GSEData - Boxplot",xlab=col_names[i],ylab=col_names[i])
+} 
+```
+
+
+
+

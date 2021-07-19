@@ -1,0 +1,39 @@
+---
+title: "Bladder Cancer - Data Cleaning"
+output: html_notebook
+---
+
+```{r}
+#Read the dataset
+data=read.csv('./gse_data.csv',header = TRUE)
+head(data)
+```
+```{r}
+colnames(data) #Get the columns of the dataset
+```
+
+```{r}
+#Get the dimension of the dataset
+dim(data)
+```
+
+```{r}
+sum(is.na(data))
+```
+Therefore, we can see there is no NA value in our dataset.
+
+```{r}
+summary(data)
+```
+
+From the summary, we can see that there is big overlap between the third quartiles and the max values, which indicate the presence of outliers in our data.
+
+
+
+
+
+
+
+
+
+
